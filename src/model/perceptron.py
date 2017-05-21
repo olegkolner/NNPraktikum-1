@@ -2,7 +2,7 @@
 
 import sys
 import logging
-
+import random
 import numpy as np
 
 from util.activation_functions import Activation
@@ -58,7 +58,16 @@ class Perceptron(Classifier):
         """
         
         # Write your code to train the perceptron here
-        pass
+        n = len(self.trainingSet.input)
+        print (n)
+        for j in xrange(self.epochs):
+            random.shuffle(self.trainingSet.input)
+            for trainingInstance in zip(self.trainingSet.input, self.trainingSet.label) :
+                self.updateWeights(trainingInstance[0], trainingInstance[1])
+
+
+
+
 
     def classify(self, testInstance):
         """Classify a single instance.
@@ -73,7 +82,8 @@ class Perceptron(Classifier):
             True if the testInstance is recognized as a 7, False otherwise.
         """
         # Write your code to do the classification on an input image
-        pass
+        return Activation.sign(np.dot(testInstance, self.weight))
+
 
     def evaluate(self, test=None):
         """Evaluate a whole dataset.
@@ -96,7 +106,8 @@ class Perceptron(Classifier):
 
     def updateWeights(self, input, error):
         # Write your code to update the weights of the perceptron here
-        pass
+        if error == 0 :
+            self.weight = self.weight - self.learningRate * input
          
     def fire(self, input):
         """Fire the output of the perceptron corresponding to the input """
