@@ -56,17 +56,13 @@ class Perceptron(Classifier):
         verbose : boolean
             Print logging messages with validation accuracy if verbose is True.
         """
-        
-        # Write your code to train the perceptron here
-        n = len(self.trainingSet.input)
-        print (n)
-        for j in xrange(self.epochs):
-            random.shuffle(self.trainingSet.input)
-            for trainingInstance in zip(self.trainingSet.input, self.trainingSet.label) :
-                self.updateWeights(trainingInstance[0], trainingInstance[1])
 
-
-
+        tuples = zip(self.trainingSet.input, self.trainingSet.label)
+        for k in xrange(self.epochs):
+            random.shuffle(tuples)
+            for xj, dj in tuples:
+                yj = self.classify(xj)
+                self.weight = self.weight + self.learningRate * (dj - yj) * xj
 
 
     def classify(self, testInstance):
@@ -106,8 +102,8 @@ class Perceptron(Classifier):
 
     def updateWeights(self, input, error):
         # Write your code to update the weights of the perceptron here
-        if error == 0 :
-            self.weight = self.weight - self.learningRate * input
+        pass
+
          
     def fire(self, input):
         """Fire the output of the perceptron corresponding to the input """
