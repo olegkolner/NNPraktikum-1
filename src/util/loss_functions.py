@@ -9,7 +9,6 @@ import numpy as np
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 
-
 class Error:
     """
     Abstract class of an Error
@@ -60,7 +59,9 @@ class MeanSquaredError(Error):
 
     def calculateError(self, target, output):
         # MSE = 1/n*sum (i=1 to n) of (target_i - output_i)^2)
-        pass
+        errors = [(target_i - output_i)**2 for target_i, output_i  in zip(target, output)]
+        return np.sum(errors)/len(target)
+
 
 
 class SumSquaredError(Error):

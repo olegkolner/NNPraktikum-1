@@ -4,9 +4,12 @@ import sys
 import logging
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from util.activation_functions import Activation
 from model.classifier import Classifier
+from util.loss_functions import DifferentError
+from util.loss_functions import MeanSquaredError
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.DEBUG,
@@ -55,8 +58,28 @@ class LogisticRegression(Classifier):
         verbose : boolean
             Print logging messages with validation accuracy if verbose is True.
         """
+        lossDiffer = DifferentError()
+        lossMSE = MeanSquaredError()
+        list_of_errors = []
+        for epoch in xrange(self.epochs):
+            gradient = 0
+            outputs = []
+            for input, target in zip(self.trainingSet.input, self.trainingSet.label):
+                output = self.fire(input)
+                outputs.append(output)
+                error = lossDiffer.calculateError(target, output)
+                gradient = gradient + error * input
+            self.updateWeights(gradient)
 
-        pass
+            mse = lossMSE.calculateError(self.trainingSet.label, outputs)
+            list_of_errors.append(mse)
+
+            #if verbose :
+                #logging.info("Epoch : %i; MSE : %f", epoch + 1, mse)
+
+        return list_of_errors, range(self.epochs+1)
+
+
         
     def classify(self, testInstance):
         """Classify a single instance.
@@ -70,7 +93,7 @@ class LogisticRegression(Classifier):
         bool :
             True if the testInstance is recognized as a 7, False otherwise.
         """
-        pass
+        return int(self.fire(testInstance))
 
     def evaluate(self, test=None):
         """Evaluate a whole dataset.
@@ -92,7 +115,8 @@ class LogisticRegression(Classifier):
         return list(map(self.classify, test))
 
     def updateWeights(self, grad):
-        pass
+        self.weight = self.weight + self.learningRate * grad
+
 
     def fire(self, input):
         # Look at how we change the activation function here!!!!
