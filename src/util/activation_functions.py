@@ -5,8 +5,7 @@ Activation functions which can be used within neurons.
 """
 
 from numpy import exp
-from numpy import divide
-
+from numpy import seterr
 
 class Activation:
     """
@@ -19,6 +18,7 @@ class Activation:
 
     @staticmethod
     def sigmoid(netOutput):
+        seterr(over='ignore')
         return 1.0/(1.0 + exp(-netOutput))
     @staticmethod
     def sigmoidPrime(netOutput):

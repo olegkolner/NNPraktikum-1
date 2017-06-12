@@ -61,8 +61,8 @@ class LogisticRegression(Classifier):
         lossDiffer = DifferentError()
         lossMSE = MeanSquaredError()
         list_of_errors = []
+        gradient = 0
         for epoch in xrange(self.epochs):
-            gradient = 0
             outputs = []
             for input, target in zip(self.trainingSet.input, self.trainingSet.label):
                 output = self.fire(input)
