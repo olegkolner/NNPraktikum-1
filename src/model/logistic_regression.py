@@ -4,9 +4,11 @@ import sys
 import logging
 
 import numpy as np
+import random
 
 from util.activation_functions import Activation
 from model.classifier import Classifier
+from model.logistic_layer import LogisticLayer
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.DEBUG,
@@ -35,19 +37,24 @@ class LogisticRegression(Classifier):
     epochs : positive int
     """
 
-    def __init__(self, train, valid, test, learningRate=0.01, epochs=50):
+    def __init__(self, train, valid, test, learningRate=0.01, epochs=30, num_layers=1, minibatch_size = 1):
 
         self.learningRate = learningRate
         self.epochs = epochs
+        self.minibatch_size = minibatch_size
 
         self.trainingSet = train
         self.validationSet = valid
         self.testSet = test
 
-        # Initialize the weight vector with small values
-        self.weight = 0.01*np.random.randn(self.trainingSet.input.shape[1])
+        self.layers = []
+        for i in xrange(num_layers):
+            isClassifier = False
+            if (i == num_layers - 1) : isClassifier = True
+            self.layers.append(LogisticLayer(nIn=self.trainingSet.input.shape[1], nOut=1, activation='sigmoid',  isClassifierLayer=isClassifier))
 
-    def train(self, verbose=True):
+
+    def train(self, verbose=False):
         """Train the Logistic Regression.
 
         Parameters
@@ -57,37 +64,24 @@ class LogisticRegression(Classifier):
         """
 
         from util.loss_functions import DifferentError
-        loss = DifferentError()
 
         learned = False
         iteration = 0
 
+        training_pairs = zip(self.trainingSet.input, self.trainingSet.label)
+
         while not learned:
-            grad = 0
-            totalError = 0
-            for input, label in zip(self.trainingSet.input,
-                                    self.trainingSet.label):
-                output = self.fire(input)
-                # compute gradient
-                grad += -(label - output)*input
+            random.shuffle(training_pairs)
+            minibatches = [training_pairs[j:j+self.minibatch_size] for j in xrange(0, len(training_pairs), self.minibatch_size)]
+            for minibatch in minibatches:
+                self.updateMinibatch(minibatch)
 
-                # compute recognizing error, not BCE
-                predictedLabel = self.classify(input)
-                error = loss.calculateError(label, predictedLabel)
-                totalError += error
-
-            self.updateWeights(grad)
-            totalError = abs(totalError)
-            
             iteration += 1
 
-            if verbose:
-                logging.info("Epoch: %i; Error: %i", iteration, totalError)
-                
-
-            if totalError == 0 or iteration >= self.epochs:
+            if iteration >= self.epochs:
                 # stop criteria is reached
                 learned = True
+
 
     def classify(self, testInstance):
         """Classify a single instance.
@@ -102,6 +96,7 @@ class LogisticRegression(Classifier):
             True if the testInstance is recognized as a 7, False otherwise.
         """
         return self.fire(testInstance) > 0.5
+
 
     def evaluate(self, test=None):
         """Evaluate a whole dataset.
@@ -122,8 +117,35 @@ class LogisticRegression(Classifier):
         # set.
         return list(map(self.classify, test))
 
-    def updateWeights(self, grad):
-        self.weight -= self.learningRate*grad
+
+    def feedforward(self, input):
+        for layer in self.layers :
+            input = layer.forward(input)
+        return input
+
+
+    def updateWeights(self):
+        for layer in self.layers:
+            layer.updateWeights(learning_rate=self.learningRate, minibatch_size=self.minibatch_size)
+
+
+    def updateMinibatch(self, minibatch):
+        nextWeights = 0
+        grad = 0
+        for input_x, label_x in minibatch :
+            o_x = input_x
+            for layer in self.layers :
+                layer.input[1:] = o_x[:, None]
+                o_x = layer.forward(o_x)
+
+            cost_derivative = o_x-label_x
+
+            for layer in reversed(self.layers) :
+                cost_derivative = layer.computeDerivative(nextDerivatives=cost_derivative, nextWeights=nextWeights)
+                nextWeights = layer.weights
+
+            self.updateWeights()
+
 
     def fire(self, input):
-        return Activation.sigmoid(np.dot(np.array(input), self.weight))
+        return self.feedforward(input)

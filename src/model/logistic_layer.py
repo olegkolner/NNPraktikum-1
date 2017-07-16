@@ -4,10 +4,9 @@ import time
 import numpy as np
 
 from util.activation_functions import Activation
-from model.layer import Layer
 
 
-class LogisticLayer(Layer):
+class LogisticLayer:
     """
     A layer of perceptrons acting as the output layer
 
@@ -47,6 +46,7 @@ class LogisticLayer(Layer):
         # Notice the functional programming paradigms of Python + Numpy
         self.activationString = activation
         self.activation = Activation.getActivation(self.activationString)
+        self.activation_derivative = Activation.getDerivative(self.activationString)
 
         self.nIn = nIn
         self.nOut = nOut
@@ -84,7 +84,9 @@ class LogisticLayer(Layer):
         ndarray :
             a numpy array (1,nOut) containing the output of the layer
         """
-        pass
+        self.output = Activation.sigmoid(np.dot(self.weights[: ,1:], input) + self.weights[:,0]) #must be bias added
+        return self.output
+
 
     def computeDerivative(self, nextDerivatives, nextWeights):
         """
@@ -102,10 +104,21 @@ class LogisticLayer(Layer):
         ndarray :
             a numpy array containing the partial derivatives on this layer
         """
-        pass
+        # check whether this layer is output layer or hidden layer
+        if self.isClassifierLayer :
+            self.delta = nextDerivatives*self.activation_derivative(np.dot(self.weights[:, 1:], self.input[1:, :])+self.weights[:,0]) #add bias self.weights[:,0]
+        else :
+            self.delta = np.dot(nextWeights.transpose(), nextDerivatives)*self.activation_derivative(np.dot(self.weights[:, 1:], self.input[1:, :])+ self.weights[:,0]) * self.input[1:,:].transpose()
 
-    def updateWeights(self):
-        """
-        Update the weights of the layer
-        """
-        pass
+        return self.delta
+
+
+    def updateWeights(self, learning_rate, minibatch_size):
+        for j in xrange(self.nOut):
+            self.weights[j, 1:] = self.weights[j, 1:] - (learning_rate/minibatch_size) * self.delta * self.input[1:,:].transpose()
+
+            #adjust bias
+            self.weights[j, 0] = self.weights[j, 0] - (learning_rate / minibatch_size) * self.delta
+
+
+
